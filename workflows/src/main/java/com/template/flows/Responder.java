@@ -1,16 +1,15 @@
 package com.template.flows;
 
 import co.paralleluniverse.fibers.Suspendable;
-import net.corda.core.flows.FlowException;
-import net.corda.core.flows.FlowLogic;
-import net.corda.core.flows.FlowSession;
-import net.corda.core.flows.InitiatedBy;
+import net.corda.core.flows.*;
+import net.corda.core.transactions.SignedTransaction;
+import org.jetbrains.annotations.NotNull;
 
 // ******************
 // * Responder flow *
 // ******************
-@InitiatedBy(Initiator.class)
-public class Responder extends FlowLogic<Void> {
+@InitiatedBy(AssignTask.Initiator.class)
+public class Responder extends FlowLogic<SignedTransaction> {
     private FlowSession counterpartySession;
 
     public Responder(FlowSession counterpartySession) {
@@ -19,9 +18,17 @@ public class Responder extends FlowLogic<Void> {
 
     @Suspendable
     @Override
-    public Void call() throws FlowException {
+    public SignedTransaction call() throws FlowException {
         // Responder flow logic goes here.
 
-        return null;
+        SignedTransaction stx = subFlow(new SignTransactionFlow(counterpartySession) {
+            @Override
+            protected void checkTransaction(@NotNull SignedTransaction stx) throws FlowException {
+            }
+        });
+
+        System.out.println("Responder");
+        return subFlow(new ReceiveFinalityFlow(counterpartySession, stx.getId()));
     }
+
 }
